@@ -1,0 +1,92 @@
+[root@ip-172-31-36-124 velocity_vpc]# cat main.tf
+
+provider "aws" {
+
+        region = "ap-south-1"
+        access_key = ""
+        secret_key = ""
+
+}
+
+##############create vpc###########
+
+resource "aws_vpc" "test_vpc" {
+
+        cidr_block = "10.10.0.0/16"
+        tags = {
+                Name = "myvpc"
+        }
+
+}
+
+############create subnets############
+
+resource "aws_subnet" "subnet_1" {
+
+        vpc_id = "${aws_vpc.test_vpc.id}"
+        cidr_block = "10.10.1.0/24"
+        availability_zone = "ap-south-1a"
+        tags = {
+                        Name = "subnet_1"
+        }
+
+}
+
+
+resource "aws_subnet" "subnet_2" {
+
+        vpc_id = "${aws_vpc.test_vpc.id}"
+        cidr_block = "10.10.2.0/24"
+        availability_zone = "ap-south-1b"
+        tags = {
+                        Name = "subnet_2"
+        }
+
+}
+
+########################create igw###################
+
+resource "aws_internet_gateway" "test_igw" {
+
+        vpc_id = "${aws_vpc.test_vpc.id}"
+}
+
+###################create route table############
+
+resource "aws_route_table" "test_rt" {
+
+        vpc_id = "${aws_vpc.test_vpc.id}"
+        route {
+
+                cidr_block = "0.0.0.0/0"
+                gateway_id = "${aws_internet_gateway.test_igw.id}"
+
+                }
+}
+
+##################route table association########
+
+resource "aws_route_table_association" "a" {
+
+        route_table_id = "${aws_route_table.test_rt.id}"
+        subnet_id = "${aws_subnet.subnet_1.id}"
+}
+
+resource "aws_route_table_association" "b" {
+
+        route_table_id = "${aws_route_table.test_rt.id}"
+        subnet_id = "${aws_subnet.subnet_2.id}"
+}
+
+########################## launch instance ############
+
+resource "aws_instance" "test" {
+
+        ami = "ami-0c84181f02b974bc3"
+        instance_type = "t2.micro"
+        subnet_id = "${aws_subnet.subnet_1.id}"
+        key_name = "my-linux"
+
+}
+
+#################################################################################
